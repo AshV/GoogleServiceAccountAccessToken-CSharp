@@ -11,9 +11,9 @@ namespace GoogleServiceAccountAccessToken
 {
     public class GoogleServiceAccount
     {
-        public static Task<string> GetAccessTokenFromJSONKeyAsync(string keyFilePath, params string[] scopes)
+        public static Task<string> GetAccessTokenFromJSONKeyAsync(string jsonKeyFilePath, params string[] scopes)
         {
-            using (var stream = new FileStream(keyFilePath, FileMode.Open, FileAccess.Read))
+            using (var stream = new FileStream(jsonKeyFilePath, FileMode.Open, FileAccess.Read))
             {
                 return GoogleCredential
                     .FromStream(stream)
@@ -23,32 +23,27 @@ namespace GoogleServiceAccountAccessToken
             }
         }
 
-        public static string GetAccessTokenFromJSONKey(string keyFilePath, params string[] scopes)
+        public static string GetAccessTokenFromJSONKey(string jsonKeyFilePath, params string[] scopes)
         {
-            return GetAccessTokenFromJSONKeyAsync(keyFilePath, scopes).Result;
+            return GetAccessTokenFromJSONKeyAsync(jsonKeyFilePath, scopes).Result;
         }
 
-        public static string GetAccessTokenFromP12Key(string keyFilePath)
+        public static Task<string> GetAccessTokenFromP12KeyAsync(string p12KeyFilePath, string serviceAccountEmail, string keyPassword, params string[] scopes)
         {
+            return new ServiceAccountCredential(
+                new ServiceAccountCredential.Initializer(serviceAccountEmail)
+                {
+                    Scopes = scopes
+                }.FromCertificate(
+                    new X509Certificate2(
+                        p12KeyFilePath,
+                        keyPassword,
+                        X509KeyStorageFlags.Exportable))).GetAccessTokenForRequestAsync();
+        }
 
-            string[] scopes = new string[] {  "https://www.googleapis.com/auth/firebase.database",
-                     "https://www.googleapis.com/auth/userinfo.email" };
-
-            var serviceAccountEmail = "c-sharpcorner-2d7ae@appspot.gserviceaccount.com";  // found https://console.developers.google.com
-
-            //loading the Key file
-            var certificate = new X509Certificate2("C-SharpCorner-acc457c856b1.json", "notasecret", X509KeyStorageFlags.Exportable);
-            var credential = new ServiceAccountCredential(new ServiceAccountCredential.Initializer(serviceAccountEmail)
-            {
-                Scopes = scopes
-            }.FromCertificate(certificate));
-
-            var accessToken = credential.GetAccessTokenForRequestAsync().Result;
-
-
-
-            return "";
-
+        public static string GetAccessTokenFromP12Key(string p12KeyFilePath, string serviceAccountEmail, string keyPassword, params string[] scopes)
+        {
+            return GetAccessTokenFromP12KeyAsync(p12KeyFilePath, serviceAccountEmail, keyPassword, scopes).Result;
         }
     }
 }
